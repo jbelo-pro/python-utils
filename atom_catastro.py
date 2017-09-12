@@ -89,9 +89,6 @@ class HardWorker:
         """
         # amount of entries at first level. In
         entries_data = []
-        folder_entry = None
-        path_folder_entry = None
-        sub_atom = None
         try:
             atom = fp(atom_url)
             entries = atom.entries
@@ -103,9 +100,6 @@ class HardWorker:
                 path_folder_entry = path_folder + '/' + folder_entry
                 sub_atom = entry.enclosures[0].href
                 entries_data.append({'folder': folder_entry, 'path': path_folder_entry, 'reference': sub_atom})
-                # raise FileExistsError if the directory already exist. avoid overwriting
-                #os.mkdir(path_folder_entry)
-                # enter in closure
         except Exception as e:
             print("Exception exception: " + str(e))
         return entries_data
@@ -187,6 +181,7 @@ def main():
         for a in list_entries:
             # print(a['folder'], a['path'], a['reference'])
             list_files = HardWorker.extractor(a['reference'])
+            HardWorker.downloader(a['folder'],list_files,a['path'])
             # for b in list_files:
                 # print(b.title)
     except OSError as e:
