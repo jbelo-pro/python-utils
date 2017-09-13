@@ -24,6 +24,7 @@ PATH_ROOT = "/Users/javierbelogarcia/Documents/catastro"
 class WorkingException(Exception):
     pass
 
+
 class CSVHandler:
 
     csv_log = None
