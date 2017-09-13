@@ -141,7 +141,8 @@ class HardWorker:
         return entries_file
 
     @staticmethod
-    def downloader(lvl_name: str, entries: list, path_folder: str, csv_handler: CSVHandler, con_type: str = 'application/zip') -> list:
+    def downloader(lvl_name: str, entries: list, path_folder: str, csv_handler: CSVHandler,
+                   con_type: str = 'application/zip') -> None:
         """
         Iterate parse entries and download zip files with Catastro data of each municipality
         :param lvl_name: name of the level for this list. In this case Catastro province
@@ -180,6 +181,8 @@ class HardWorker:
                   str(total_entries))
             # TODO change reporting by
             csv_handler.write_csv(failures)
+        except IOError as e:
+            print("Exception IOError: " + str(e))
         except FileExistsError as e:
             print("Exception FileExistError: " + str(e))
         except Exception as e:
@@ -224,6 +227,8 @@ def main():
 
         time_2 = time.time()
         print("Total time spent: {}".format(time_2-time_1))
+    except IOError as e:
+        rint("Exception IOError: " + str(e))
     except OSError as e:
         print("Exception OSError: " + str(e))
     except WorkingException as e:
