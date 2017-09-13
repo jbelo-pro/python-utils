@@ -6,6 +6,8 @@
     date: 2017-09-07
 """
 from feedparser import parse as fp
+from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 import urllib.parse
 import os
@@ -28,21 +30,28 @@ class WorkingException(Exception):
 
 class CSVHandler:
 
-    csv_log = None
+    path_folder = None
+    lock = threading.Lock()
 
     def __init__(self):
-        self.rlock = threading.RLock()
+        pass
 
     def open_csv(self, path_folder: str) -> None:
-        """
-        Create new csv file based on the parameters
+        """ Create new csv file based on the parameters
         If csv already exist then just open it
         :param path_folder:
         :return: None
         :raise: IOError
         """
-        if self.csv_log is None:
-            self.csv_log = open(path_folder + '/errors.csv', 'wb')
+        self.lock.acquire()
+        try:
+            self.path_folder = path_folder + '/errors.csv'
+            print(self.path_folder)
+            csv_log = open(self.path_folder, 'w')
+        finally:
+            if csv_log is not None:
+                csv_log.close()
+            self.lock.release()
 
     def write_csv(self, rows: list) -> None:
         """
@@ -50,10 +59,16 @@ class CSVHandler:
         :param rows: array containing the rows to include in the csv
         :return: None
         """
-        with self.rlock:
-            csv_writer = csv.writer(self.csv_log, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        self.lock.acquire()
+        try:
+            csv_log = open(self.path_folder, 'a')
+            csv_writer = csv.writer(csv_log, delimiter=';')
             for row in rows:
                 csv_writer.writerow(row)
+        finally:
+            if csv_log is not None:
+                csv_log.close()
+            self.lock.release()
 
 
 class HardWorker:
@@ -74,7 +89,6 @@ class HardWorker:
         path_folder = path_root + "/" + folder
         os.makedirs(path_folder, exist_ok=False)
         return path_folder
-        pass
 
     @staticmethod
     def entries_list(atom_url: str) -> list:
@@ -127,13 +141,14 @@ class HardWorker:
         return entries_file
 
     @staticmethod
-    def downloader(lvl_name: str, entries: list, path_folder: str, type: str = 'application/zip') -> list:
+    def downloader(lvl_name: str, entries: list, path_folder: str, csv_handler: CSVHandler, con_type: str = 'application/zip') -> list:
         """
         Iterate parse entries and download zip files with Catastro data of each municipality
         :param lvl_name: name of the level for this list. In this case Catastro province
         :param entries: list of entries containing file for downloading
         :param path_folder: directory where Catastro data will be downloaded
-        :param type: type of file to download
+        :param con_type: type of file to download
+        :param csv_handler:
         :return: list with errors in municipality downloading
         """
         # multidimensional array containing the errors generated during the downloading process
@@ -142,10 +157,9 @@ class HardWorker:
         entries_downloaded = 0
         total_entries = len(entries)
         file_extension = None
-        if type == 'application/zip':
+        if con_type == 'application/zip':
             file_extension = '.zip'
         try:
-            # TODO review if changing by makedirs
             # raise FileExistsError if the directory already exist. avoid overwriting
             os.mkdir(path_folder)
             for entry_n in entries:
@@ -164,31 +178,56 @@ class HardWorker:
 
             print('Province: ' + lvl_name + '  Municipalities downloaded: ' + str(entries_downloaded) + '/' +
                   str(total_entries))
-            return failures
-            # if provinces == 5:
-                # break
-        # TODO review how to manage these exception
+            # TODO change reporting by
+            csv_handler.write_csv(failures)
         except FileExistsError as e:
             print("Exception FileExistError: " + str(e))
         except Exception as e:
             print("Exception exception: " + str(e))
 
 
-def main():
+class WorkerThread(Thread):
+    folder = None
+    list_files = None
+    path = None
 
-    t0 = time.time()
+    def __init__(self):
+        print("Hello world")
+        Thread.__init__(self)
+
+    def set_variables(self,folder, list_files, path):
+        self.folder = folder
+        self.list_files = list_files
+        self.path = path
+
+    def run(self):
+        print("Thread is now running")
+        HardWorker.downloader(self.folder, self.list_files, self.path)
+
+
+def main():
     try:
         # 1 make directory
         path_to_folder = HardWorker.folder_setting(PATH_ROOT,ATOM_DATA['addresses']['folder'])
+
+        csv_handler = CSVHandler()
+        csv_handler.open_csv(path_to_folder)
+
+        # 2 we get the list of entries for a given level, in this case the first one
         list_entries = HardWorker.level_reader(ATOM_DATA['addresses']['url'], path_to_folder)
-        for a in list_entries:
-            # print(a['folder'], a['path'], a['reference'])
-            list_files = HardWorker.extractor(a['reference'])
-            HardWorker.downloader(a['folder'], list_files, a['path'])
-            # for b in list_files:
-                # print(b.title)
-        t1 = time.time()
-        print("total time: {}".format(t1-t0))
+        counter = 0
+        time_1 = time.time()
+        with ThreadPoolExecutor(max_workers=50) as executor:
+            for entry in list_entries:
+                list_files = HardWorker.extractor(entry['reference'])
+                future = executor.submit(HardWorker.downloader, lvl_name=entry['folder'], entries=list_files,
+                                         path_folder=entry['path'], csv_handler=csv_handler)
+                counter += 1
+                if counter > 2:
+                    break
+
+        time_2 = time.time()
+        print("Total time spent: {}".format(time_2-time_1))
     except OSError as e:
         print("Exception OSError: " + str(e))
     except WorkingException as e:
