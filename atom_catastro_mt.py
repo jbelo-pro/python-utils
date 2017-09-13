@@ -215,16 +215,12 @@ def main():
 
         # 2 we get the list of entries for a given level, in this case the first one
         list_entries = HardWorker.level_reader(ATOM_DATA['addresses']['url'], path_to_folder)
-        counter = 0
         time_1 = time.time()
         with ThreadPoolExecutor(max_workers=50) as executor:
             for entry in list_entries:
                 list_files = HardWorker.extractor(entry['reference'])
                 future = executor.submit(HardWorker.downloader, lvl_name=entry['folder'], entries=list_files,
                                          path_folder=entry['path'], csv_handler=csv_handler)
-                counter += 1
-                if counter > 2:
-                    break
 
         time_2 = time.time()
         print("Total time spent: {}".format(time_2-time_1))
