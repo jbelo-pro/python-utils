@@ -213,7 +213,6 @@ class WorkerThread(Thread):
     path = None
 
     def __init__(self):
-        print("Hello world")
         Thread.__init__(self)
 
     def set_variables(self,folder, list_files, path):
@@ -222,7 +221,6 @@ class WorkerThread(Thread):
         self.path = path
 
     def run(self):
-        print("Thread is now running")
         HardWorker.downloader(self.folder, self.list_files, self.path)
 """
 
