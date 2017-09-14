@@ -197,7 +197,8 @@ class HardWorker:
 
             print('Province: ' + lvl_name + '  Municipalities downloaded: ' + str(entries_downloaded) + '/' +
                   str(total_entries))
-            csv_handler.write_csv(failures)
+            if failures:
+                csv_handler.write_csv(failures)
         except IOError as e:
             print("Exception IOError: " + str(e))
         except FileExistsError as e:
