@@ -27,7 +27,7 @@ ATOM_DATA = {'addresses': {'url': "http://www.catastro.minhap.es/INSPIRE/Address
                                      'folder': "buildings"}}
 
 # Path to folder where to download the files
-PATH_ROOT = "/Users/javierbelogarcia/Documents/catastro" #"/put/here/the/path/to/the/folder"
+PATH_ROOT = "/put/here/the/path/to/the/folder"
 
 
 class WorkingException(Exception):
