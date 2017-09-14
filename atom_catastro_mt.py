@@ -9,7 +9,7 @@
     date: 2017-09-07
 """
 from feedparser import parse as fp
-from threading import Thread
+# from threading import Thread
 from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 import urllib.parse
@@ -56,6 +56,7 @@ class CSVHandler:
         :raise: IOError
         """
         self.lock.acquire()
+        csv_log = None
         try:
             self.path_folder = path_folder + '/errors.csv'
             print(self.path_folder)
@@ -71,6 +72,7 @@ class CSVHandler:
         :return: None
         """
         self.lock.acquire()
+        csv_log = None
         try:
             csv_log = open(self.path_folder, 'a')
             csv_writer = csv.writer(csv_log, delimiter=';')
@@ -195,7 +197,6 @@ class HardWorker:
 
             print('Province: ' + lvl_name + '  Municipalities downloaded: ' + str(entries_downloaded) + '/' +
                   str(total_entries))
-            # TODO change reporting by
             csv_handler.write_csv(failures)
         except IOError as e:
             print("Exception IOError: " + str(e))
@@ -205,6 +206,7 @@ class HardWorker:
             print("Exception exception: " + str(e))
 
 
+"""
 class WorkerThread(Thread):
     folder = None
     list_files = None
@@ -222,7 +224,7 @@ class WorkerThread(Thread):
     def run(self):
         print("Thread is now running")
         HardWorker.downloader(self.folder, self.list_files, self.path)
-
+"""
 
 def main():
     try:
@@ -240,7 +242,7 @@ def main():
         time_2 = time.time()
         print("Total time spent: {}".format(time_2-time_1))
     except IOError as e:
-        rint("Exception IOError: " + str(e))
+        print("Exception IOError: " + str(e))
     except OSError as e:
         print("Exception OSError: " + str(e))
     except WorkingException as e:
