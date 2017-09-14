@@ -226,6 +226,7 @@ class WorkerThread(Thread):
         HardWorker.downloader(self.folder, self.list_files, self.path)
 """
 
+
 def main():
     try:
         path_to_folder = HardWorker.folder_setting(PATH_ROOT,ATOM_DATA['addresses']['folder'])
